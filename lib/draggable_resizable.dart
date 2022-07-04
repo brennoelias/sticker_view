@@ -28,7 +28,7 @@ class DragUpdate {
 }
 
 const _cornerDiameter = 22.0;
-const _floatingActionDiameter = 18.0;
+const _floatingActionDiameter = 20.0;
 const _floatingActionPadding = 24.0;
 // const _floatingActionPadding = 0.0;
 
@@ -209,8 +209,8 @@ class _DraggableResizableState extends State<DraggableResizable> {
           // if (!widget.constraints.isSatisfiedBy(updatedSize)) return;
 
           final updatedPosition = Offset(position.dx - mid, position.dy - mid);
-          // minimum size of the sticker should be Size(50,50)
-          if (updatedSize > const Size(50, 50)) {
+          // minimum size of the sticker should be Size(32,32)
+          if (updatedSize > const Size(32, 32)) {
             setState(() {
               size = updatedSize;
               position = updatedPosition;
@@ -295,14 +295,16 @@ class _DraggableResizableState extends State<DraggableResizable> {
         final rotateAnchor = GestureDetector(
           key: const Key('draggableResizable_rotate_gestureDetector'),
           onScaleStart: (details) {
+            print(details);
             final offsetFromCenter = details.localFocalPoint - center;
+
             setState(() => angleDelta = baseAngle -
                 offsetFromCenter.direction -
                 _floatingActionDiameter);
           },
           onScaleUpdate: (details) {
             final offsetFromCenter = details.localFocalPoint - center;
-
+            print('a: ${offsetFromCenter.direction + angleDelta * 0.5}');
             setState(
               () {
                 angle = offsetFromCenter.direction + angleDelta * 0.5;
@@ -431,13 +433,13 @@ class _ResizePoint extends StatelessWidget {
       required this.onDrag,
       required this.type,
       this.onScale,
-      this.iconData})
+      required this.iconData})
       : super(key: key);
 
   final ValueSetter<Offset> onDrag;
   final ValueSetter<double>? onScale;
   final _ResizePointType type;
-  final IconData? iconData;
+  final IconData iconData;
 
   MouseCursor get _cursor {
     return _cursorLookup[type]!;
@@ -448,31 +450,10 @@ class _ResizePoint extends StatelessWidget {
     return MouseRegion(
       cursor: _cursor,
       child: _DraggablePoint(
-        mode: _PositionMode.local,
-        onDrag: onDrag,
-        onScale: onScale,
-        child: Container(
-          width: _cornerDiameter,
-          height: _cornerDiameter,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.transparent, width: 2),
-            shape: BoxShape.circle,
-          ),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: iconData != null
-                ? Icon(
-                    iconData,
-                    size: 12,
-                    color: Colors.blue,
-                  )
-                : Container(),
-          ),
-        ),
-      ),
+          mode: _PositionMode.local,
+          onDrag: onDrag,
+          onScale: onScale,
+          child: _FloatingActionIcon(iconData: iconData)),
     );
   }
 }

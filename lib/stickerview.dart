@@ -4,8 +4,6 @@ import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'draggable_stickers.dart';
 
-enum ImageQuality { low, medium, high }
-
 ///
 /// StickerView
 /// A Flutter widget that can rotate, resize, edit and manage layers of widgets.
@@ -22,16 +20,10 @@ class StickerView extends StatefulWidget {
   const StickerView({this.stickerList, this.height, this.width, this.child});
 
   // Method for saving image of the editor view as Uint8List
-  // You have to pass the imageQuality as per your requirement (ImageQuality.low, ImageQuality.medium or ImageQuality.high)
-  static Future<Uint8List?> saveAsUint8List(ImageQuality imageQuality) async {
+  static Future<Uint8List?> saveAsUint8List({double pixelRatio = 3.0}) async {
     try {
       Uint8List? pngBytes;
-      double pixelRatio = 1;
-      if (imageQuality == ImageQuality.high) {
-        pixelRatio = 2;
-      } else if (imageQuality == ImageQuality.low) {
-        pixelRatio = 0.5;
-      }
+
       // delayed by few seconds because it takes some time to update the state by RenderRepaintBoundary
       await Future.delayed(const Duration(milliseconds: 700))
           .then((value) async {
@@ -87,6 +79,7 @@ class StickerViewState extends State<StickerView> {
                         if (widget.child != null)
                           Positioned.fill(child: widget.child!),
                         Positioned.fill(
+
                             //DraggableStickers class in which stickerList is passed
                             child: DraggableStickers(
                           stickerList: stickerList,
@@ -102,13 +95,32 @@ class StickerViewState extends State<StickerView> {
 
 // ignore: must_be_immutable
 class Sticker extends StatefulWidget {
-  // you can pass any widget to it as child
+  /// you can pass any widget to it as child
   Widget? child;
-  // set isText to true if passed Text widget as child
+
+  /// set isText to true if passed Text widget as child
   bool? isText = false;
-  // every sticker must be assigned with unique id
+
+  /// Aspect ratio of sticker, defaults to 1.0
+  double aspectRatio;
+
+  /// Initial scale of sticker, defaults to 3.0
+  double initialScale;
+
+  /// every sticker must be assigned with unique id
   String id;
-  Sticker({Key? key, this.child, this.isText, required this.id})
+
+  /// Callback to edit the sticker
+  Function()? onEdit;
+
+  Sticker(
+      {Key? key,
+      required this.id,
+      this.child,
+      this.isText,
+      this.onEdit,
+      this.aspectRatio = 1.0,
+      this.initialScale = 3.0})
       : super(key: key);
   @override
   _StickerState createState() => _StickerState();

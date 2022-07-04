@@ -35,8 +35,7 @@ class _HomePageState extends State<HomePage> {
         floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.save_alt),
           onPressed: () async {
-            Uint8List? imageData =
-                await StickerView.saveAsUint8List(ImageQuality.high);
+            Uint8List? imageData = await StickerView.saveAsUint8List();
             if (imageData != null) {
               var imageName = DateTime.now().microsecondsSinceEpoch.toString();
               var appDocDir = await getApplicationDocumentsDirectory();

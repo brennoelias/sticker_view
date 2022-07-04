@@ -15,9 +15,6 @@ class DraggableStickers extends StatefulWidget {
 String? selectedAssetId;
 
 class _DraggableStickersState extends State<DraggableStickers> {
-  // initial scale of sticker
-  final _initialStickerScale = 5.0;
-
   List<Sticker> stickers = [];
   @override
   void initState() {
@@ -67,7 +64,7 @@ class _DraggableStickersState extends State<DraggableStickers> {
                   },
 
                   // To edit (Not implemented yet)
-                  onEdit: () {},
+                  onEdit: sticker.onEdit,
 
                   // To Delete the sticker
                   onDelete: () async {
@@ -79,23 +76,24 @@ class _DraggableStickersState extends State<DraggableStickers> {
 
                   // Size of the sticker
                   size: sticker.isText == true
-                      ? Size(64 * _initialStickerScale / 3,
-                          64 * _initialStickerScale / 3)
-                      : Size(
-                          64 * _initialStickerScale, 64 * _initialStickerScale),
+                      ? Size(
+                          (64 * sticker.initialScale / 3) * sticker.aspectRatio,
+                          (64 * sticker.initialScale / 3) * sticker.aspectRatio)
+                      : Size((64 * sticker.initialScale) * sticker.aspectRatio,
+                          (64 * sticker.initialScale) / sticker.aspectRatio),
 
                   // Constraints of the sticker
                   constraints: sticker.isText == true
                       ? BoxConstraints.tight(
                           Size(
-                            64 * _initialStickerScale / 3,
-                            64 * _initialStickerScale / 3,
+                            64 * sticker.initialScale / 3,
+                            64 * sticker.initialScale / 3,
                           ),
                         )
                       : BoxConstraints.tight(
                           Size(
-                            64 * _initialStickerScale,
-                            64 * _initialStickerScale,
+                            64 * sticker.initialScale,
+                            64 * sticker.initialScale,
                           ),
                         ),
 
