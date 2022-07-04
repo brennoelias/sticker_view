@@ -16,8 +16,10 @@ class StickerView extends StatefulWidget {
   final double? height; // height of the editor view
   final double? width; // width of the editor view
 
+  final Widget? child;
+
   // ignore: use_key_in_widget_constructors
-  const StickerView({this.stickerList, this.height, this.width});
+  const StickerView({this.stickerList, this.height, this.width, this.child});
 
   // Method for saving image of the editor view as Uint8List
   // You have to pass the imageQuality as per your requirement (ImageQuality.low, ImageQuality.medium or ImageQuality.high)
@@ -73,21 +75,23 @@ class StickerViewState extends State<StickerView> {
             children: [
               //For capturing screenshot of the widget
               RepaintBoundary(
-                key: stickGlobalKey,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                  ),
-                  height:
-                      widget.height ?? MediaQuery.of(context).size.height * 0.7,
-                  width: widget.width ?? MediaQuery.of(context).size.width,
-                  child:
-                      //DraggableStickers class in which stickerList is passed
-                      DraggableStickers(
-                    stickerList: stickerList,
-                  ),
-                ),
-              ),
+                  key: stickGlobalKey,
+                  child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                      ),
+                      height: widget.height ??
+                          MediaQuery.of(context).size.height * 0.7,
+                      width: widget.width ?? MediaQuery.of(context).size.width,
+                      child: Stack(fit: StackFit.expand, children: [
+                        if (widget.child != null)
+                          Positioned.fill(child: widget.child!),
+                        Positioned.fill(
+                            //DraggableStickers class in which stickerList is passed
+                            child: DraggableStickers(
+                          stickerList: stickerList,
+                        )),
+                      ]))),
             ],
           )
         : const CircularProgressIndicator();
