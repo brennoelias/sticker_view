@@ -25,6 +25,9 @@ class StickerView extends StatefulWidget {
   /// Optional sticker controller allowing external interaction
   final StickerController? controller;
 
+  /// Background color
+  final Color? backgroundColor;
+
   // ignore: use_key_in_widget_constructors
   const StickerView(
       {this.stickerList,
@@ -32,6 +35,7 @@ class StickerView extends StatefulWidget {
       this.width,
       this.child,
       this.watermark,
+      this.backgroundColor,
       this.controller});
 
   // Method for saving image of the editor view as Uint8List
@@ -88,7 +92,7 @@ class StickerViewState extends State<StickerView> {
                   key: stickGlobalKey,
                   child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: widget.backgroundColor ?? Colors.grey[200],
                       ),
                       height: widget.height ??
                           MediaQuery.of(context).size.height * 0.7,
