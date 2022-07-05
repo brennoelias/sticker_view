@@ -5,9 +5,10 @@ import 'stickerview.dart';
 class DraggableStickers extends StatefulWidget {
   //List of stickers (elements)
   final List<Sticker>? stickerList;
+  final StickerController controller;
 
   // ignore: use_key_in_widget_constructors
-  const DraggableStickers({this.stickerList});
+  const DraggableStickers({this.stickerList, required this.controller});
   @override
   State<DraggableStickers> createState() => _DraggableStickersState();
 }
@@ -21,6 +22,18 @@ class _DraggableStickersState extends State<DraggableStickers> {
     setState(() {
       stickers = widget.stickerList ?? [];
     });
+
+    print('Got event listener ready....');
+    widget.controller.stream.listen((event) {
+      print('Got event: $event');
+      switch (event) {
+        case StickersAction.selectNone:
+          setState(() {
+            selectedAssetId = null;
+          });
+          break;
+      }
+    });
     super.initState();
   }
 
@@ -33,7 +46,11 @@ class _DraggableStickersState extends State<DraggableStickers> {
               Positioned.fill(
                 child: GestureDetector(
                   key: const Key('stickersView_background_gestureDetector'),
-                  onTap: () {},
+                  onTap: () {
+                    setState(() {
+                      selectedAssetId = null;
+                    });
+                  },
                 ),
               ),
               for (final sticker in stickers)

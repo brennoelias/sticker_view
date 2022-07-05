@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'draggable_stickers.dart';
+import 'sticker_controller.dart';
+
+export 'sticker_controller.dart';
 
 ///
 /// StickerView
@@ -19,9 +22,17 @@ class StickerView extends StatefulWidget {
   /// Optional watermark that will be displayed above all content
   final Positioned? watermark;
 
+  /// Optional sticker controller allowing external interaction
+  final StickerController? controller;
+
   // ignore: use_key_in_widget_constructors
   const StickerView(
-      {this.stickerList, this.height, this.width, this.child, this.watermark});
+      {this.stickerList,
+      this.height,
+      this.width,
+      this.child,
+      this.watermark,
+      this.controller});
 
   // Method for saving image of the editor view as Uint8List
   static Future<Uint8List?> saveAsUint8List({double pixelRatio = 3.0}) async {
@@ -56,10 +67,13 @@ class StickerViewState extends State<StickerView> {
   // You have to pass the List of Sticker
   List<Sticker>? stickerList;
 
+  late StickerController controller;
+
   @override
   void initState() {
     setState(() {
       stickerList = widget.stickerList;
+      controller = widget.controller ?? StickerController();
     });
     super.initState();
   }
@@ -80,10 +94,16 @@ class StickerViewState extends State<StickerView> {
                           MediaQuery.of(context).size.height * 0.7,
                       width: widget.width ?? MediaQuery.of(context).size.width,
                       child: Stack(fit: StackFit.expand, children: [
-                        if (widget.child != null)
-                          Positioned.fill(child: widget.child!),
+                        // background content
+                        Positioned.fill(
+                            child: (widget.child != null)
+                                ? widget.child!
+                                : Container()),
+
+                        // Draggable stickers
                         Positioned.fill(
                             child: DraggableStickers(
+                          controller: controller,
                           stickerList: stickerList,
                         )),
                         if (widget.watermark != null) widget.watermark!
