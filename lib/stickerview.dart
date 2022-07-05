@@ -16,8 +16,12 @@ class StickerView extends StatefulWidget {
 
   final Widget? child;
 
+  /// Optional watermark that will be displayed above all content
+  final Positioned? watermark;
+
   // ignore: use_key_in_widget_constructors
-  const StickerView({this.stickerList, this.height, this.width, this.child});
+  const StickerView(
+      {this.stickerList, this.height, this.width, this.child, this.watermark});
 
   // Method for saving image of the editor view as Uint8List
   static Future<Uint8List?> saveAsUint8List({double pixelRatio = 3.0}) async {
@@ -79,11 +83,10 @@ class StickerViewState extends State<StickerView> {
                         if (widget.child != null)
                           Positioned.fill(child: widget.child!),
                         Positioned.fill(
-
-                            //DraggableStickers class in which stickerList is passed
                             child: DraggableStickers(
                           stickerList: stickerList,
                         )),
+                        if (widget.watermark != null) widget.watermark!
                       ]))),
             ],
           )
