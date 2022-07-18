@@ -27,9 +27,9 @@ class DragUpdate {
   final Size constraints;
 }
 
-const _cornerDiameter = 22.0;
-const _floatingActionDiameter = 20.0;
-const _floatingActionPadding = 24.0;
+const _cornerDiameter = 26.0;
+const _floatingActionDiameter = 24.0;
+const _floatingActionPadding = 28.0;
 // const _floatingActionPadding = 0.0;
 
 /// {@template draggable_resizable}
@@ -241,12 +241,14 @@ class _DraggableResizableState extends State<DraggableResizable> {
           key: const Key('draggableResizable_edit_floatingActionIcon'),
           iconData: Icons.edit,
           onTap: widget.onEdit,
+          scaleFactor: size.width / widget.size.width,
         );
 
         final topCenter = _FloatingActionIcon(
           key: const Key('draggableResizable_layer_floatingActionIcon'),
           iconData: Icons.layers,
           onTap: widget.onLayerTapped,
+          scaleFactor: size.width / widget.size.width,
         );
         // final topLeftCorner = _ResizePoint(
         //   key: const Key('draggableResizable_topLeft_resizePoint'),
@@ -272,12 +274,14 @@ class _DraggableResizableState extends State<DraggableResizable> {
           type: _ResizePointType.bottomRight,
           onDrag: onDragBottomRight,
           iconData: Icons.zoom_out_map,
+          scaleFactor: size.width / widget.size.width,
         );
 
         final deleteButton = _FloatingActionIcon(
           key: const Key('draggableResizable_delete_floatingActionIcon'),
           iconData: Icons.delete,
           onTap: widget.onDelete,
+          scaleFactor: size.width / widget.size.width,
         );
 
         final center = Offset(
@@ -316,6 +320,7 @@ class _DraggableResizableState extends State<DraggableResizable> {
           child: _FloatingActionIcon(
             key: const Key('draggableResizable_rotate_floatingActionIcon'),
             iconData: Icons.rotate_90_degrees_ccw,
+            scaleFactor: size.width / widget.size.width,
             onTap: () {},
           ),
         );
@@ -339,35 +344,41 @@ class _DraggableResizableState extends State<DraggableResizable> {
                   key: const Key('draggableResizable_child_draggablePoint'),
                   onTap: onUpdate,
                   onDrag: (d) {
-                    setState(() {
-                      position = Offset(position.dx + d.dx, position.dy + d.dy);
-                    });
-                    onUpdate();
+                    if (widget.canTransform && isTouchInputSupported) {
+                      setState(() {
+                        position = Offset(position.dx + d.dx, position.dy + d.dy);
+                      });
+                      onUpdate();
+                    }
                   },
                   onScale: (s) {
-                    final updatedSize = Size(
-                      widget.size.width * s,
-                      widget.size.height * s,
-                    );
+                    if (widget.canTransform && isTouchInputSupported) {
+                      final updatedSize = Size(
+                        widget.size.width * s,
+                        widget.size.height * s,
+                      );
 
-                    if (!widget.constraints.isSatisfiedBy(updatedSize)) return;
+                      // if (!widget.constraints.isSatisfiedBy(updatedSize)) return;
 
-                    final midX = position.dx + (size.width / 2);
-                    final midY = position.dy + (size.height / 2);
-                    final updatedPosition = Offset(
-                      midX - (updatedSize.width / 2),
-                      midY - (updatedSize.height / 2),
-                    );
+                      final midX = position.dx + (size.width / 2);
+                      final midY = position.dy + (size.height / 2);
+                      final updatedPosition = Offset(
+                        midX - (updatedSize.width / 2),
+                        midY - (updatedSize.height / 2),
+                      );
 
-                    setState(() {
-                      size = updatedSize;
-                      position = updatedPosition;
-                    });
-                    onUpdate();
+                      setState(() {
+                        size = updatedSize;
+                        position = updatedPosition;
+                      });
+                      onUpdate();
+                    }
                   },
                   onRotate: (a) {
-                    setState(() => angle = a * 0.5);
-                    onUpdate();
+                    if (widget.canTransform && isTouchInputSupported) {
+                      setState(() => angle = a * 1);
+                      onUpdate();
+                    }
                   },
                   child: Stack(
                     children: [
@@ -433,11 +444,13 @@ class _ResizePoint extends StatelessWidget {
       required this.onDrag,
       required this.type,
       this.onScale,
+      this.scaleFactor = 1.0,
       required this.iconData})
       : super(key: key);
 
   final ValueSetter<Offset> onDrag;
   final ValueSetter<double>? onScale;
+  final double scaleFactor;
   final _ResizePointType type;
   final IconData iconData;
 
@@ -453,7 +466,7 @@ class _ResizePoint extends StatelessWidget {
           mode: _PositionMode.local,
           onDrag: onDrag,
           onScale: onScale,
-          child: _FloatingActionIcon(iconData: iconData)),
+          child: _FloatingActionIcon(iconData: iconData, scaleFactor: scaleFactor)),
     );
   }
 }
@@ -541,13 +554,22 @@ class _FloatingActionIcon extends StatelessWidget {
     Key? key,
     required this.iconData,
     this.onTap,
+    this.scaleFactor = 1.0,
   }) : super(key: key);
 
   final IconData iconData;
   final VoidCallback? onTap;
+  final double scaleFactor;
 
   @override
   Widget build(BuildContext context) {
+    double scale = scaleFactor;
+    if(scaleFactor < 1.0){
+      scale = 1.0;
+    }else if(scaleFactor > 1.5){
+      scale = 1.5;
+    }
+
     return Material(
       color: Colors.white,
       clipBehavior: Clip.hardEdge,
@@ -555,13 +577,13 @@ class _FloatingActionIcon extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          height: _floatingActionDiameter,
-          width: _floatingActionDiameter,
+          height: _floatingActionDiameter * scale,
+          width: _floatingActionDiameter * scale,
           child: Center(
             child: Icon(
               iconData,
               color: Colors.blue,
-              size: 12,
+              size: 16 * scale,
             ),
           ),
         ),
