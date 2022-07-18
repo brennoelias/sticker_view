@@ -299,7 +299,6 @@ class _DraggableResizableState extends State<DraggableResizable> {
         final rotateAnchor = GestureDetector(
           key: const Key('draggableResizable_rotate_gestureDetector'),
           onScaleStart: (details) {
-            print(details);
             final offsetFromCenter = details.localFocalPoint - center;
 
             setState(() => angleDelta = baseAngle -
@@ -308,10 +307,9 @@ class _DraggableResizableState extends State<DraggableResizable> {
           },
           onScaleUpdate: (details) {
             final offsetFromCenter = details.localFocalPoint - center;
-            print('a: ${offsetFromCenter.direction + angleDelta * 0.5}');
             setState(
               () {
-                angle = offsetFromCenter.direction + angleDelta * 0.5;
+                angle = offsetFromCenter.direction + angleDelta * 1;
               },
             );
             onUpdate();
