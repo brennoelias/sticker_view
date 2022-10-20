@@ -79,12 +79,15 @@ class StickerViewState extends State<StickerView> {
       stickerList = widget.stickerList;
       controller = widget.controller ?? StickerController();
     });
+    if (stickerList != null) {
+      controller.initStickers(stickerList);
+    }
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return stickerList != null
+    return stickerList != null || controller.stickers.isNotEmpty
         ? Column(
             children: [
               //For capturing screenshot of the widget
@@ -108,13 +111,14 @@ class StickerViewState extends State<StickerView> {
                         Positioned.fill(
                             child: DraggableStickers(
                           controller: controller,
-                          stickerList: stickerList,
                         )),
                         if (widget.watermark != null) widget.watermark!
                       ]))),
             ],
           )
-        : const CircularProgressIndicator();
+        : const Center(
+            child: CircularProgressIndicator(),
+          );
   }
 }
 
@@ -127,6 +131,13 @@ class Sticker extends StatefulWidget {
 
   /// set isText to true if passed Text widget as child
   bool? isText = false;
+
+  // New properties for save state
+  double? posx;
+  double? posy;
+  double? angle;
+  double? width;
+  double? height;
 
   /// Aspect ratio of sticker, defaults to 1.0
   double aspectRatio;
@@ -146,6 +157,11 @@ class Sticker extends StatefulWidget {
       this.child,
       this.isText,
       this.onEdit,
+      this.posx,
+      this.posy,
+      this.angle,
+      this.width,
+      this.height,
       this.aspectRatio = 1.0,
       this.initialScale = 3.0})
       : super(key: key);

@@ -42,6 +42,12 @@ class DraggableResizable extends StatefulWidget {
     required this.child,
     required this.size,
     BoxConstraints? constraints,
+    this.posx,
+    this.posy,
+    this.width,
+    this.height,
+    this.angle,
+    this.id,
     this.onUpdate,
     this.onLayerTapped,
     this.onEdit,
@@ -74,6 +80,14 @@ class DraggableResizable extends StatefulWidget {
   /// Defaults to [BoxConstraints.loose(Size.infinite)].
   final BoxConstraints constraints;
 
+  // New properties for save state
+  final double? posx;
+  final double? posy;
+  final double? width;
+  final double? height;
+  final double? angle;
+  final String? id;
+
   @override
   _DraggableResizableState createState() => _DraggableResizableState();
 }
@@ -92,11 +106,21 @@ class _DraggableResizableState extends State<DraggableResizable> {
   @override
   void initState() {
     super.initState();
-    size = widget.size;
+    size = (widget.width != null && widget.height != null
+        ? Size(widget.width!, widget.height!)
+        : widget.size);
     constraints = const BoxConstraints.expand(width: 1, height: 1);
-    angle = 0;
+    angle = widget.angle ?? 0;
     baseAngle = 0;
     angleDelta = 0;
+    position = (widget.posx != null && widget.posy != null
+        ? Offset(widget.posx!, widget.posy!)
+        : Offset.zero);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   @override
@@ -131,12 +155,13 @@ class _DraggableResizableState extends State<DraggableResizable> {
           );
           widget.onUpdate?.call(
             DragUpdate(
-              position: normalizedPosition,
+              position: Offset(position.dx, position.dy),
               size: size,
               constraints: Size(constraints.maxWidth, constraints.maxHeight),
               angle: angle,
             ),
           );
+          // widget.onUpdate();
         }
 
         // void onDragTopLeft(Offset details) {
@@ -344,7 +369,8 @@ class _DraggableResizableState extends State<DraggableResizable> {
                   onDrag: (d) {
                     if (widget.canTransform && isTouchInputSupported) {
                       setState(() {
-                        position = Offset(position.dx + d.dx, position.dy + d.dy);
+                        position =
+                            Offset(position.dx + d.dx, position.dy + d.dy);
                       });
                       onUpdate();
                     }
@@ -464,7 +490,8 @@ class _ResizePoint extends StatelessWidget {
           mode: _PositionMode.local,
           onDrag: onDrag,
           onScale: onScale,
-          child: _FloatingActionIcon(iconData: iconData, scaleFactor: scaleFactor)),
+          child: _FloatingActionIcon(
+              iconData: iconData, scaleFactor: scaleFactor)),
     );
   }
 }
@@ -562,9 +589,9 @@ class _FloatingActionIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double scale = scaleFactor;
-    if(scaleFactor < 1.0){
+    if (scaleFactor < 1.0) {
       scale = 1.0;
-    }else if(scaleFactor > 1.5){
+    } else if (scaleFactor > 1.5) {
       scale = 1.5;
     }
 

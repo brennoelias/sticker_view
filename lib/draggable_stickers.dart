@@ -17,20 +17,31 @@ String? selectedAssetId;
 
 class _DraggableStickersState extends State<DraggableStickers> {
   List<Sticker> stickers = [];
+
   @override
   void initState() {
-    setState(() {
-      stickers = widget.stickerList ?? [];
+    stickers = widget.stickerList ?? [];
+
+    if (widget.controller.stickers.isNotEmpty) {
+      stickers = widget.controller.stickers;
+    }
+
+    widget.controller.stickersStream.listen((event) {
+      if (mounted) {
+        setState(() {
+          stickers = event;
+        });
+      }
     });
 
-    print('Got event listener ready....');
     widget.controller.stream.listen((event) {
-      print('Got event: $event');
       switch (event) {
         case StickersAction.selectNone:
-          setState(() {
-            selectedAssetId = null;
-          });
+          if (mounted) {
+            setState(() {
+              selectedAssetId = null;
+            });
+          }
           break;
       }
     });
@@ -63,18 +74,19 @@ class _DraggableStickersState extends State<DraggableStickers> {
 
                   //  true
                   /*sticker.id == state.selectedAssetId*/,
-                  onUpdate: (update) => {},
+                  onUpdate: (update) {
+                    sticker.posx = update.position.dx;
+                    sticker.posy = update.position.dy;
+                    sticker.width = update.size.width;
+                    sticker.height = update.size.height;
+                    sticker.angle = update.angle;
+
+                    widget.controller.updateSticker(sticker);
+                  },
 
                   // To update the layer (manage position of widget in stack)
                   onLayerTapped: () {
-                    var listLength = stickers.length;
-                    var ind = stickers.indexOf(sticker);
-                    stickers.remove(sticker);
-                    if (ind == listLength - 1) {
-                      stickers.insert(0, sticker);
-                    } else {
-                      stickers.insert(listLength - 1, sticker);
-                    }
+                    widget.controller.updateStickerLayer(sticker);
 
                     selectedAssetId = sticker.id;
                     setState(() {});
@@ -86,10 +98,15 @@ class _DraggableStickersState extends State<DraggableStickers> {
                   // To Delete the sticker
                   onDelete: () async {
                     {
-                      stickers.remove(sticker);
-                      setState(() {});
+                      widget.controller.removeSticker(sticker);
                     }
                   },
+                  angle: sticker.angle,
+                  width: sticker.width,
+                  height: sticker.height,
+                  posx: sticker.posx,
+                  posy: sticker.posy,
+                  id: sticker.id,
 
                   // Size of the sticker
                   size: sticker.isText == true
