@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'drag_controller.dart';
 import 'draggable_resizable.dart';
 import 'stickerview.dart';
 
@@ -6,9 +7,10 @@ class DraggableStickers extends StatefulWidget {
   //List of stickers (elements)
   final List<Sticker>? stickerList;
   final StickerController controller;
+  final DragController dragController;
 
   // ignore: use_key_in_widget_constructors
-  const DraggableStickers({this.stickerList, required this.controller});
+  const DraggableStickers({this.stickerList, required this.controller, required this.dragController});
   @override
   State<DraggableStickers> createState() => _DraggableStickersState();
 }
@@ -68,12 +70,10 @@ class _DraggableStickersState extends State<DraggableStickers> {
 
                 // Main widget that handles all features like rotate, resize, edit, delete, layer update etc.
                 DraggableResizable(
-                  key:
-                      Key('stickerPage_${sticker.id}_draggableResizable_asset'),
-                  canTransform: selectedAssetId == sticker.id ? true : false
-
+                  key: Key('stickerPage_${sticker.id}_draggableResizable_asset'),
+                  canTransform: selectedAssetId == sticker.id ? true : false,
                   //  true
-                  /*sticker.id == state.selectedAssetId*/,
+                  /*sticker.id == state.selectedAssetId*/
                   onUpdate: (update) {
                     sticker.posx = update.position.dx;
                     sticker.posy = update.position.dy;
@@ -83,6 +83,7 @@ class _DraggableStickersState extends State<DraggableStickers> {
 
                     widget.controller.updateSticker(sticker);
                   },
+                  dragController: widget.dragController,
 
                   // To update the layer (manage position of widget in stack)
                   onLayerTapped: () {
@@ -110,11 +111,8 @@ class _DraggableStickersState extends State<DraggableStickers> {
 
                   // Size of the sticker
                   size: sticker.isText == true
-                      ? Size(
-                          (64 * sticker.initialScale / 3) * sticker.aspectRatio,
-                          (64 * sticker.initialScale / 3) * sticker.aspectRatio)
-                      : Size((64 * sticker.initialScale) * sticker.aspectRatio,
-                          (64 * sticker.initialScale) / sticker.aspectRatio),
+                      ? Size((64 * sticker.initialScale / 3) * sticker.aspectRatio, (64 * sticker.initialScale / 3) * sticker.aspectRatio)
+                      : Size((64 * sticker.initialScale) * sticker.aspectRatio, (64 * sticker.initialScale) / sticker.aspectRatio),
 
                   // Constraints of the sticker
                   constraints: sticker.isText == true
@@ -142,9 +140,7 @@ class _DraggableStickersState extends State<DraggableStickers> {
                     child: SizedBox(
                       width: double.infinity,
                       height: double.infinity,
-                      child: sticker.isText == true
-                          ? FittedBox(child: sticker)
-                          : sticker,
+                      child: sticker.isText == true ? FittedBox(child: sticker) : sticker,
                     ),
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:sticker_view/drag_controller.dart';
 import 'dart:ui' as ui;
 import 'draggable_stickers.dart';
 import 'sticker_controller.dart';
@@ -29,14 +30,7 @@ class StickerView extends StatefulWidget {
   final Color? backgroundColor;
 
   // ignore: use_key_in_widget_constructors
-  const StickerView(
-      {this.stickerList,
-      this.height,
-      this.width,
-      this.child,
-      this.watermark,
-      this.backgroundColor,
-      this.controller});
+  const StickerView({this.stickerList, this.height, this.width, this.child, this.watermark, this.backgroundColor, this.controller});
 
   // Method for saving image of the editor view as Uint8List
   static Future<Uint8List?> saveAsUint8List({double pixelRatio = 3.0}) async {
@@ -44,13 +38,10 @@ class StickerView extends StatefulWidget {
       Uint8List? pngBytes;
 
       // delayed by few seconds because it takes some time to update the state by RenderRepaintBoundary
-      await Future.delayed(const Duration(milliseconds: 700))
-          .then((value) async {
-        RenderRepaintBoundary boundary = stickGlobalKey.currentContext
-            ?.findRenderObject() as RenderRepaintBoundary;
+      await Future.delayed(const Duration(milliseconds: 700)).then((value) async {
+        RenderRepaintBoundary boundary = stickGlobalKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
         ui.Image image = await boundary.toImage(pixelRatio: pixelRatio);
-        ByteData? byteData =
-            await image.toByteData(format: ui.ImageByteFormat.png);
+        ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
         pngBytes = byteData?.buffer.asUint8List();
       });
       // returns Uint8List
@@ -72,9 +63,13 @@ class StickerViewState extends State<StickerView> {
   List<Sticker>? stickerList;
 
   late StickerController controller;
+  final DragController dragController = DragController();
 
   @override
   void initState() {
+    dragController.addListener(() {
+      setState(() {});
+    });
     setState(() {
       stickerList = widget.stickerList;
       controller = widget.controller ?? StickerController();
@@ -97,20 +92,14 @@ class StickerViewState extends State<StickerView> {
                       decoration: BoxDecoration(
                         color: widget.backgroundColor ?? Colors.grey[200],
                       ),
-                      height: widget.height ??
-                          MediaQuery.of(context).size.height * 0.7,
+                      height: widget.height ?? MediaQuery.of(context).size.height * 0.7,
                       width: widget.width ?? MediaQuery.of(context).size.width,
                       child: Stack(fit: StackFit.expand, children: [
-                        // background content
-                        Positioned.fill(
-                            child: (widget.child != null)
-                                ? widget.child!
-                                : Container()),
-
-                        // Draggable stickers
+                        Positioned.fill(child: (widget.child != null) ? widget.child! : Container()),
                         Positioned.fill(
                             child: DraggableStickers(
                           controller: controller,
+                          dragController: dragController,
                         )),
                         if (widget.watermark != null) widget.watermark!
                       ]))),

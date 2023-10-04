@@ -1,6 +1,9 @@
+import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import 'drag_controller.dart';
 
 /// {@template drag_update}
 /// Drag update model which includes the position and size.
@@ -53,6 +56,7 @@ class DraggableResizable extends StatefulWidget {
     this.onEdit,
     this.onDelete,
     this.canTransform = false,
+    required this.dragController,
   })  : constraints = constraints ?? BoxConstraints.loose(Size.infinite),
         super(key: key);
 
@@ -68,6 +72,7 @@ class DraggableResizable extends StatefulWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
   final VoidCallback? onLayerTapped;
+  final DragController dragController;
 
   /// Whether or not the asset can be dragged or resized.
   /// Defaults to false.
@@ -106,16 +111,12 @@ class _DraggableResizableState extends State<DraggableResizable> {
   @override
   void initState() {
     super.initState();
-    size = (widget.width != null && widget.height != null
-        ? Size(widget.width!, widget.height!)
-        : widget.size);
+    size = (widget.width != null && widget.height != null ? Size(widget.width!, widget.height!) : widget.size);
     constraints = const BoxConstraints.expand(width: 1, height: 1);
     angle = widget.angle ?? 0;
     baseAngle = 0;
     angleDelta = 0;
-    position = (widget.posx != null && widget.posy != null
-        ? Offset(widget.posx!, widget.posy!)
-        : Offset.zero);
+    position = (widget.posx != null && widget.posy != null ? Offset(widget.posx!, widget.posy!) : Offset.zero);
   }
 
   @override
@@ -146,12 +147,8 @@ class _DraggableResizableState extends State<DraggableResizable> {
 
         void onUpdate() {
           final normalizedPosition = Offset(
-            normalizedLeft +
-                (_floatingActionPadding / 2) +
-                (_cornerDiameter / 2),
-            normalizedTop +
-                (_floatingActionPadding / 2) +
-                (_cornerDiameter / 2),
+            normalizedLeft + (_floatingActionPadding / 2) + (_cornerDiameter / 2),
+            normalizedTop + (_floatingActionPadding / 2) + (_cornerDiameter / 2),
           );
           widget.onUpdate?.call(
             DragUpdate(
@@ -254,10 +251,15 @@ class _DraggableResizableState extends State<DraggableResizable> {
             height: normalizedHeight,
             width: normalizedWidth,
             decoration: BoxDecoration(
-              border: Border.all(
-                width: 2,
-                color: widget.canTransform ? Colors.blue : Colors.transparent,
-              ),
+              border: widget.dragController.hasTwoFingers
+                  ? Border.all(
+                      width: 2,
+                      color: Colors.transparent,
+                    )
+                  : Border.all(
+                      width: 2,
+                      color: widget.canTransform ? Colors.blue : Colors.red,
+                    ),
             ),
             child: Center(child: widget.child),
           ),
@@ -265,7 +267,9 @@ class _DraggableResizableState extends State<DraggableResizable> {
         final topLeftCorner = _FloatingActionIcon(
           key: const Key('draggableResizable_edit_floatingActionIcon'),
           iconData: Icons.edit,
-          onTap: widget.onEdit,
+          onTap: () {
+            widget.dragController.setTwoFingers(true);
+          },
           scaleFactor: size.width / widget.size.width,
         );
 
@@ -310,15 +314,9 @@ class _DraggableResizableState extends State<DraggableResizable> {
         );
 
         final center = Offset(
-          -((normalizedHeight / 2) +
-              (_floatingActionDiameter / 2) +
-              (_cornerDiameter / 2) +
-              (_floatingActionPadding / 2)),
+          -((normalizedHeight / 2) + (_floatingActionDiameter / 2) + (_cornerDiameter / 2) + (_floatingActionPadding / 2)),
           // (_floatingActionDiameter + _cornerDiameter) / 2,
-          (normalizedHeight / 2) +
-              (_floatingActionDiameter / 2) +
-              (_cornerDiameter / 2) +
-              (_floatingActionPadding / 2),
+          (normalizedHeight / 2) + (_floatingActionDiameter / 2) + (_cornerDiameter / 2) + (_floatingActionPadding / 2),
         );
 
         final rotateAnchor = GestureDetector(
@@ -326,9 +324,7 @@ class _DraggableResizableState extends State<DraggableResizable> {
           onScaleStart: (details) {
             final offsetFromCenter = details.localFocalPoint - center;
 
-            setState(() => angleDelta = baseAngle -
-                offsetFromCenter.direction -
-                _floatingActionDiameter);
+            setState(() => angleDelta = baseAngle - offsetFromCenter.direction - _floatingActionDiameter);
           },
           onScaleUpdate: (details) {
             final offsetFromCenter = details.localFocalPoint - center;
@@ -366,11 +362,16 @@ class _DraggableResizableState extends State<DraggableResizable> {
                 child: _DraggablePoint(
                   key: const Key('draggableResizable_child_draggablePoint'),
                   onTap: onUpdate,
+                  onTapDown: () {
+                    widget.dragController.setSelectedAssetId(hashCode.toString());
+                  },
+                  onTapUp: () {},
+                  state: widget.dragController.hasTwoFingers ? null : widget.dragController,
+                  onlyOneFinger: true,
                   onDrag: (d) {
                     if (widget.canTransform && isTouchInputSupported) {
                       setState(() {
-                        position =
-                            Offset(position.dx + d.dx, position.dy + d.dy);
+                        position = Offset(position.dx + d.dx, position.dy + d.dy);
                       });
                       onUpdate();
                     }
@@ -404,6 +405,7 @@ class _DraggableResizableState extends State<DraggableResizable> {
                       onUpdate();
                     }
                   },
+                  onSecondaryTap: () {},
                   child: Stack(
                     children: [
                       decoratedChild,
@@ -411,29 +413,26 @@ class _DraggableResizableState extends State<DraggableResizable> {
                         Positioned(
                           top: _floatingActionPadding / 2,
                           left: _floatingActionPadding / 2,
-                          child: topLeftCorner,
+                          child: widget.dragController.hasTwoFingers ? Container() : topLeftCorner,
                         ),
                         Positioned(
-                          right: (normalizedWidth / 2) -
-                              (_floatingActionDiameter / 2) +
-                              (_cornerDiameter / 2) +
-                              (_floatingActionPadding / 2),
-                          child: topCenter,
+                          right: (normalizedWidth / 2) - (_floatingActionDiameter / 2) + (_cornerDiameter / 2) + (_floatingActionPadding / 2),
+                          child: widget.dragController.hasTwoFingers ? Container() : topCenter,
                         ),
                         Positioned(
                           bottom: _floatingActionPadding / 2,
                           left: _floatingActionPadding / 2,
-                          child: deleteButton,
+                          child: widget.dragController.hasTwoFingers ? Container() : deleteButton,
                         ),
                         Positioned(
                           top: normalizedHeight + _floatingActionPadding / 2,
                           left: normalizedWidth + _floatingActionPadding / 2,
-                          child: bottomRightCorner,
+                          child: widget.dragController.hasTwoFingers ? Container() : bottomRightCorner,
                         ),
                         Positioned(
                           top: _floatingActionPadding / 2,
                           right: _floatingActionPadding / 2,
-                          child: rotateAnchor,
+                          child: widget.dragController.hasTwoFingers ? Container() : rotateAnchor,
                         ),
                       ],
                     ],
@@ -441,6 +440,75 @@ class _DraggableResizableState extends State<DraggableResizable> {
                 ),
               ),
             ),
+            if (widget.dragController.hasTwoFingers && widget.dragController.selectedAssetId == hashCode.toString())
+              Container(
+                color: Colors.blue.withOpacity(0.2),
+                alignment: Alignment.center,
+                height: MediaQuery.of(context).size.height,
+                width: MediaQuery.of(context).size.width,
+                child: Stack(
+                  children: [
+                    Text(widget.dragController.selectedAssetId),
+                    Center(
+                        child: Column(
+                      children: [
+                        Text(hashCode.toString()),
+                        Text(angle.toString()),
+                        Text(widget.dragController.fingerCount.toString()),
+                      ],
+                    )),
+                    _DraggablePoint(
+                      onSecondaryTap: () {
+                        log('secondary contact on');
+                      },
+                      onTapDown: () {},
+                      onlyOneFinger: false,
+                      state: widget.dragController,
+                      onTapUp: () {},
+                      key: const Key('draggable_fullscreen'),
+                      onTap: () {
+                        log('tapped one');
+                        onUpdate();
+                      },
+                      onDrag: (d) {
+                        if (widget.dragController.onDrag(hashCode.toString()) == true) {
+                          setState(() {
+                            position = Offset(position.dx + d.dx, position.dy + d.dy);
+                          });
+                        }
+                        onUpdate();
+                      },
+                      onScale: (s) {
+                        log('scaling');
+                        widget.dragController.setScale(s);
+                        final updatedSize = Size(
+                          widget.size.width * s,
+                          widget.size.height * s,
+                        );
+
+                        // if (!widget.constraints.isSatisfiedBy(updatedSize)) return;
+
+                        final midX = position.dx + (size.width / 2);
+                        final midY = position.dy + (size.height / 2);
+                        final updatedPosition = Offset(
+                          midX - (updatedSize.width / 2),
+                          midY - (updatedSize.height / 2),
+                        );
+
+                        setState(() {
+                          size = updatedSize;
+                          position = updatedPosition;
+                        });
+                      },
+                      onRotate: (a) {
+                        if (widget.dragController.onDrag(hashCode.toString()) == true) {
+                          setState(() => angle = a * 0.9);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
           ],
         );
       },
@@ -463,13 +531,7 @@ const _cursorLookup = <_ResizePointType, MouseCursor>{
 };
 
 class _ResizePoint extends StatelessWidget {
-  const _ResizePoint(
-      {Key? key,
-      required this.onDrag,
-      required this.type,
-      this.onScale,
-      this.scaleFactor = 1.0,
-      required this.iconData})
+  const _ResizePoint({Key? key, required this.onDrag, required this.type, this.onScale, this.scaleFactor = 1.0, required this.iconData})
       : super(key: key);
 
   final ValueSetter<Offset> onDrag;
@@ -487,11 +549,13 @@ class _ResizePoint extends StatelessWidget {
     return MouseRegion(
       cursor: _cursor,
       child: _DraggablePoint(
+          onSecondaryTap: () {},
+          onTapDown: () {},
+          onTapUp: () {},
           mode: _PositionMode.local,
           onDrag: onDrag,
           onScale: onScale,
-          child: _FloatingActionIcon(
-              iconData: iconData, scaleFactor: scaleFactor)),
+          child: _FloatingActionIcon(iconData: iconData, scaleFactor: scaleFactor)),
     );
   }
 }
@@ -501,20 +565,30 @@ enum _PositionMode { local, global }
 class _DraggablePoint extends StatefulWidget {
   const _DraggablePoint({
     Key? key,
-    required this.child,
+    this.child,
     this.onDrag,
     this.onScale,
     this.onRotate,
     this.onTap,
     this.mode = _PositionMode.global,
+    this.state,
+    this.onlyOneFinger = false,
+    required this.onTapDown,
+    required this.onTapUp,
+    required this.onSecondaryTap,
   }) : super(key: key);
 
-  final Widget child;
+  final Widget? child;
   final _PositionMode mode;
   final ValueSetter<Offset>? onDrag;
   final ValueSetter<double>? onScale;
   final ValueSetter<double>? onRotate;
   final VoidCallback? onTap;
+  final bool? onlyOneFinger;
+  final DragController? state;
+  final VoidCallback? onTapDown;
+  final VoidCallback? onTapUp;
+  final VoidCallback? onSecondaryTap;
 
   @override
   _DraggablePointState createState() => _DraggablePointState();
@@ -530,47 +604,154 @@ class _DraggablePointState extends State<_DraggablePoint> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
-      onScaleStart: (details) {
-        switch (widget.mode) {
-          case _PositionMode.global:
-            initPoint = details.focalPoint;
-            break;
-          case _PositionMode.local:
-            initPoint = details.localFocalPoint;
-            break;
-        }
-        if (details.pointerCount > 1) {
-          baseAngle = angle;
-          baseScaleFactor = scaleFactor;
-          widget.onRotate?.call(baseAngle);
-          widget.onScale?.call(baseScaleFactor);
-        }
-      },
-      onScaleUpdate: (details) {
-        switch (widget.mode) {
-          case _PositionMode.global:
-            final dx = details.focalPoint.dx - initPoint.dx;
-            final dy = details.focalPoint.dy - initPoint.dy;
-            initPoint = details.focalPoint;
-            widget.onDrag?.call(Offset(dx, dy));
-            break;
-          case _PositionMode.local:
-            final dx = details.localFocalPoint.dx - initPoint.dx;
-            final dy = details.localFocalPoint.dy - initPoint.dy;
-            initPoint = details.localFocalPoint;
-            widget.onDrag?.call(Offset(dx, dy));
-            break;
-        }
-        if (details.pointerCount > 1) {
-          scaleFactor = baseScaleFactor * details.scale;
-          widget.onScale?.call(scaleFactor);
-          angle = baseAngle + details.rotation;
-          widget.onRotate?.call(angle);
-        }
-      },
-      child: widget.child,
-    );
+        onTap: () {
+          log(hashCode.toString());
+          widget.onTap?.call();
+        },
+        onDoubleTap: () => {
+              widget.state?.setTwoFingers(true),
+            },
+        onForcePressStart: (value) {
+          log('started force press');
+        },
+        onTapCancel: () {
+          widget.onTapUp?.call();
+        },
+        onTapDown: (details) {
+          log('padded down');
+          widget.state?.setFingerCount(1);
+          widget.onTapDown?.call();
+        },
+        onScaleEnd: (details) {
+          widget.state?.setFingerCount(details.pointerCount);
+          if (details.pointerCount == 0) {
+            widget.state?.setTwoFingers(false);
+          }
+        },
+        onScaleStart: (details) {
+          widget.state?.setFingerCount(details.pointerCount);
+
+          switch (widget.mode) {
+            case _PositionMode.global:
+              initPoint = details.focalPoint;
+              break;
+            case _PositionMode.local:
+              initPoint = details.localFocalPoint;
+              break;
+          }
+          if (details.pointerCount > 1) {
+            if (widget.onlyOneFinger == false) {
+              widget.state?.setTwoFingers(true);
+            }
+            baseAngle = angle;
+            baseScaleFactor = scaleFactor;
+            widget.onRotate?.call(baseAngle);
+            widget.onScale?.call(baseScaleFactor);
+          }
+          // else {
+          //   widget.state?.setTwoFingers(false);
+          // }
+        },
+        onScaleUpdate: (details) {
+          switch (widget.mode) {
+            case _PositionMode.global:
+              final dx = details.focalPoint.dx - initPoint.dx;
+              final dy = details.focalPoint.dy - initPoint.dy;
+              initPoint = details.focalPoint;
+              widget.onDrag?.call(Offset(dx, dy));
+              break;
+            case _PositionMode.local:
+              final dx = details.localFocalPoint.dx - initPoint.dx;
+              final dy = details.localFocalPoint.dy - initPoint.dy;
+              initPoint = details.localFocalPoint;
+              widget.onDrag?.call(Offset(dx, dy));
+              break;
+          }
+          if (widget.onlyOneFinger == false) {
+            widget.state?.setFingerCount(details.pointerCount);
+          }
+
+          if (details.pointerCount > 1) {
+            if (widget.onlyOneFinger == false) {
+              widget.state?.setTwoFingers(true);
+            }
+            scaleFactor = baseScaleFactor * details.scale;
+            widget.onScale?.call(scaleFactor);
+            angle = baseAngle + details.rotation;
+            widget.onRotate?.call(angle);
+          }
+
+          // else {
+          //   widget.state?.setTwoFingers(false);
+          // }
+        },
+        child: widget.child);
+    // return GestureDetector(
+    //   onTap: widget.onTap,
+    //   onScaleStart: (details) {
+    //     widget.state?.setFingerCount(details.pointerCount);
+    //     switch (widget.mode) {
+    //       case _PositionMode.global:
+    //         initPoint = details.focalPoint;
+    //         break;
+    //       case _PositionMode.local:
+    //         initPoint = details.localFocalPoint;
+    //         break;
+    //     }
+    //     if (details.pointerCount > 1) {
+    //       if (widget.onlyOneFinger == false) {
+    //         widget.state?.setTwoFingers(true);
+    //       }
+    //       baseAngle = angle;
+    //       baseScaleFactor = scaleFactor;
+    //       widget.onRotate?.call(baseAngle);
+    //       widget.onScale?.call(baseScaleFactor);
+    //     }
+    //   },
+    //   onDoubleTap: () => {
+    //     widget.state?.setTwoFingers(true),
+    //   },
+    //   onForcePressStart: (value) {
+    //     log('started force press');
+    //   },
+    //   onTapCancel: () {
+    //     widget.onTapUp?.call();
+    //   },
+    //   onTapDown: (details) {
+    //     log('padded down');
+    //     widget.state?.setFingerCount(1);
+    //     widget.onTapDown?.call();
+    //   },
+    //   onScaleUpdate: (details) {
+    //     switch (widget.mode) {
+    //       case _PositionMode.global:
+    //         final dx = details.focalPoint.dx - initPoint.dx;
+    //         final dy = details.focalPoint.dy - initPoint.dy;
+    //         initPoint = details.focalPoint;
+    //         widget.onDrag?.call(Offset(dx, dy));
+    //         break;
+    //       case _PositionMode.local:
+    //         final dx = details.localFocalPoint.dx - initPoint.dx;
+    //         final dy = details.localFocalPoint.dy - initPoint.dy;
+    //         initPoint = details.localFocalPoint;
+    //         widget.onDrag?.call(Offset(dx, dy));
+    //         break;
+    //     }
+    //     if (widget.onlyOneFinger == false) {
+    //       widget.state?.setFingerCount(details.pointerCount);
+    //     }
+    //     if (details.pointerCount > 1) {
+    //       if (widget.onlyOneFinger == false) {
+    //         widget.state?.setTwoFingers(true);
+    //       }
+    //       scaleFactor = baseScaleFactor * details.scale;
+    //       widget.onScale?.call(scaleFactor);
+    //       angle = baseAngle + details.rotation;
+    //       widget.onRotate?.call(angle);
+    //     }
+    //   },
+    //   child: widget.child,
+    // );
   }
 }
 
