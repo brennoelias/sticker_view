@@ -57,6 +57,7 @@ class DraggableResizable extends StatefulWidget {
     this.onDelete,
     this.canTransform = false,
     required this.dragController,
+    required this.stickerId,
   })  : constraints = constraints ?? BoxConstraints.loose(Size.infinite),
         super(key: key);
 
@@ -73,6 +74,7 @@ class DraggableResizable extends StatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onLayerTapped;
   final DragController dragController;
+  final String stickerId;
 
   /// Whether or not the asset can be dragged or resized.
   /// Defaults to false.
@@ -363,7 +365,7 @@ class _DraggableResizableState extends State<DraggableResizable> {
                   key: const Key('draggableResizable_child_draggablePoint'),
                   onTap: onUpdate,
                   onTapDown: () {
-                    widget.dragController.setSelectedAssetId(hashCode.toString());
+                    widget.dragController.setSelectedAssetId(widget.stickerId);
                   },
                   onTapUp: () {},
                   state: widget.dragController.hasTwoFingers ? null : widget.dragController,
@@ -440,23 +442,14 @@ class _DraggableResizableState extends State<DraggableResizable> {
                 ),
               ),
             ),
-            if (widget.dragController.hasTwoFingers && widget.dragController.selectedAssetId == hashCode.toString())
+            if (widget.dragController.hasTwoFingers && widget.dragController.selectedAssetId == widget.stickerId)
               Container(
-                color: Colors.blue.withOpacity(0.2),
+                color: Colors.transparent,
                 alignment: Alignment.center,
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
                 child: Stack(
                   children: [
-                    Text(widget.dragController.selectedAssetId),
-                    Center(
-                        child: Column(
-                      children: [
-                        Text(hashCode.toString()),
-                        Text(angle.toString()),
-                        Text(widget.dragController.fingerCount.toString()),
-                      ],
-                    )),
                     _DraggablePoint(
                       onSecondaryTap: () {
                         log('secondary contact on');
@@ -471,7 +464,7 @@ class _DraggableResizableState extends State<DraggableResizable> {
                         onUpdate();
                       },
                       onDrag: (d) {
-                        if (widget.dragController.onDrag(hashCode.toString()) == true) {
+                        if (widget.dragController.onDrag(widget.stickerId) == true) {
                           setState(() {
                             position = Offset(position.dx + d.dx, position.dy + d.dy);
                           });
@@ -501,7 +494,7 @@ class _DraggableResizableState extends State<DraggableResizable> {
                         });
                       },
                       onRotate: (a) {
-                        if (widget.dragController.onDrag(hashCode.toString()) == true) {
+                        if (widget.dragController.onDrag(widget.stickerId) == true) {
                           setState(() => angle = a * 0.9);
                         }
                       },
@@ -605,7 +598,6 @@ class _DraggablePointState extends State<_DraggablePoint> {
   Widget build(BuildContext context) {
     return GestureDetector(
         onTap: () {
-          log(hashCode.toString());
           widget.onTap?.call();
         },
         onDoubleTap: () => {

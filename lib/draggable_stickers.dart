@@ -128,13 +128,15 @@ class _DraggableStickersState extends State<DraggableStickers> {
                             64 * sticker.initialScale,
                           ),
                         ),
-
+                  stickerId: sticker.id,
                   // Child widget in which sticker is passed
                   child: InkWell(
                     splashColor: Colors.transparent,
                     onTap: () {
                       // To update the selected widget
                       selectedAssetId = sticker.id;
+                      widget.dragController.setSelectedAssetId(sticker.id);
+                      widget.dragController.setTwoFingers(true);
                       setState(() {});
                     },
                     child: SizedBox(
