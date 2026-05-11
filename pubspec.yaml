@@ -5,8 +5,8 @@ homepage: https://github.com/gopaldhola99/sticker_view/blob/main/example/lib/mai
 repository: https://github.com/gopaldhola99/sticker_view
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.0.0"
+  sdk: ">=2.15.1 <4.0.0"
+  flutter: ">=2.5.0"
 
 dependencies:
   flutter:
